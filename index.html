@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A practical money planner for budgeting, savings goals, business costs, investment growth, and financial habits.">
+<meta name="theme-color" content="#0F4A3A">
+<meta name="color-scheme" content="light dark">
+<title>Money Laws Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head>
+<body>
+<style>
+/* Layout concept: a ledger-style planner. Sticky header with section tabs, one working view at a time, summary first and detail below. */
+:root{
+  --font-display:"Fraunces",Georgia,"Times New Roman",serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --bg:#F2F6F4; --surface:#FFFFFF; --surface-2:#E9F0EC; --ink:#11261E; --muted:#56675F; --line:#D5E0DA;
+  --accent:#0F4A3A; --on-accent:#FFFFFF; --gold:#D9A21B; --gold-soft:#FBF0D4; --gold-ink:#6E4E00;
+  --good:#1D7A45; --good-bg:#DDF1E4; --warn:#8A5A00; --warn-bg:#FBEBC8; --bad:#A12F28; --bad-bg:#F8DDDA;
+  --c-ess:#0F4A3A; --c-life:#D9A21B; --c-debt:#5B6B8C; --c-save:#1B9C8A; --c-inv:#7B5EA7; --c-left:#C9D8CF;
+  --focus:#1B7F73;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C1713; --surface:#13241D; --surface-2:#1A3027; --ink:#E7F0EB; --muted:#9DB3A8; --line:#264036;
+  --accent:#2FA886; --on-accent:#06150F; --gold:#E6B13A; --gold-soft:#2B2410; --gold-ink:#F0CE78;
+  --good:#6BD39A; --good-bg:#163826; --warn:#F0C265; --warn-bg:#352A0E; --bad:#F29A92; --bad-bg:#3C1B18;
+  --c-ess:#2FA886; --c-life:#E6B13A; --c-debt:#8FA1C7; --c-save:#4FD1BD; --c-inv:#B79BE3; --c-left:#2C4439;
+  --focus:#4FD1BD; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C1713; --surface:#13241D; --surface-2:#1A3027; --ink:#E7F0EB; --muted:#9DB3A8; --line:#264036;
+  --accent:#2FA886; --on-accent:#06150F; --gold:#E6B13A; --gold-soft:#2B2410; --gold-ink:#F0CE78;
+  --good:#6BD39A; --good-bg:#163826; --warn:#F0C265; --warn-bg:#352A0E; --bad:#F29A92; --bad-bg:#3C1B18;
+  --c-ess:#2FA886; --c-life:#E6B13A; --c-debt:#8FA1C7; --c-save:#4FD1BD; --c-inv:#B79BE3; --c-left:#2C4439;
+  --focus:#4FD1BD; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px;
+  font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+h1,h2,h3{font-family:var(--font-display);line-height:1.15;text-wrap:balance;margin:0}
+h2{font-size:26px;font-weight:700}
+h3{font-size:18px;font-weight:600}
+p{margin:0}
+a{color:var(--accent)}
+.wrap{max-width:1080px;margin:0 auto}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);padding-top:12px}
+.bar-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;font-size:20px}
+.brand svg{flex:none}
+.savestate{font-size:13px;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;margin-top:10px;border-bottom:1px solid var(--line);scrollbar-width:thin}
+nav.tabs a{flex:none;padding:10px 14px;text-decoration:none;color:var(--muted);font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--gold)}
+nav.tabs a:hover{color:var(--ink)}
+
+main{padding-top:22px;display:flex;flex-direction:column;gap:22px}
+.view{display:flex;flex-direction:column;gap:20px}
+.lead{color:var(--muted);max-width:65ch}
+.banner{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--gold-soft);color:var(--gold-ink);border-radius:10px;padding:12px 14px}
+.banner strong{color:var(--ink)}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.grid.wide{grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card .sub{color:var(--muted);font-size:14px}
+.tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.tile .k{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tile .v{font-family:var(--font-display);font-size:26px;font-weight:700;margin-top:4px;overflow-wrap:anywhere}
+.tile .n{font-size:13px;color:var(--muted)}
+.cur{font-size:13px;color:var(--muted);font-family:var(--font-body);font-weight:600;margin-right:4px}
+
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f>span:first-child{font-size:13px;font-weight:600;color:var(--muted)}
+.inp{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:0 10px;min-width:0}
+.inp:focus-within{border-color:var(--focus);box-shadow:0 0 0 2px var(--focus)}
+.inp input,.inp select{flex:1;min-width:0;border:0;background:transparent;padding:10px 0;outline:none;width:100%}
+.inp em{font-style:normal;color:var(--muted);font-size:13px;white-space:nowrap}
+.inp select{padding:10px 0}
+.fields{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+.hint{font-size:13px;color:var(--muted)}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.danger{border-color:var(--bad);color:var(--bad);background:transparent}
+.btn:hover{filter:brightness(1.06)}
+.x{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;padding:6px 8px;border-radius:6px}
+.x:hover{color:var(--bad)}
+
+.rows{display:flex;flex-direction:column;gap:8px}
+.rowline{display:grid;gap:8px;align-items:center;grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.2fr) auto}
+.rowline.inc{grid-template-columns:minmax(0,2fr) minmax(0,1.2fr) auto}
+.rowline.goal{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto}
+.rowline.cost{grid-template-columns:minmax(0,2fr) minmax(0,1.2fr) auto}
+.rowline .inp{padding:0 8px}
+@media (max-width:620px){
+  .rowline,.rowline.inc,.rowline.goal,.rowline.cost{grid-template-columns:1fr 1fr auto}
+  .rowline>.name{grid-column:1/-1}
+  .rowline.goal>.name{grid-column:1/-1}
+}
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--surface-2);gap:2px}
+.stack i{display:block;min-width:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.legend b{color:var(--ink);font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:baseline}
+.meter{height:10px;border-radius:5px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:5px}
+
+.checks{display:flex;flex-direction:column}
+.check{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.check:first-child{border-top:0}
+.check .t{font-weight:600}
+.check .d{grid-column:2;color:var(--muted);font-size:14px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;letter-spacing:.03em;white-space:nowrap;height:fit-content}
+.pill.good{background:var(--good-bg);color:var(--good)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.none{background:var(--surface-2);color:var(--muted)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
+.kv div{background:var(--surface-2);border-radius:8px;padding:10px 12px;min-width:0}
+.kv span{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.kv b{font-family:var(--font-display);font-size:19px;overflow-wrap:anywhere}
+.verdict{padding:12px 14px;border-radius:10px;font-weight:600}
+.verdict.good{background:var(--good-bg);color:var(--good)}
+.verdict.warn{background:var(--warn-bg);color:var(--warn)}
+.verdict.bad{background:var(--bad-bg);color:var(--bad)}
+.verdict.none{background:var(--surface-2);color:var(--muted)}
+.chart{width:100%;height:auto;display:block}
+.chart .gl{stroke:var(--line);stroke-width:1;fill:none}
+.chart .ax{fill:var(--muted);font-size:12px;font-family:var(--font-body)}
+.chart .a1{fill:var(--accent);fill-opacity:.16}
+.chart .l1{stroke:var(--accent);stroke-width:2.5;fill:none}
+.chart .l2{stroke:var(--gold);stroke-width:2.5;stroke-dasharray:6 5;fill:none}
+.chart .d1{fill:var(--accent)}
+.chart .d2{fill:var(--gold)}
+.chart .lb{fill:var(--ink);font-size:13px;font-weight:700;font-family:var(--font-body)}
+.keys{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.keys span::before{content:"";display:inline-block;width:18px;height:0;border-top:3px solid var(--accent);margin-right:6px;vertical-align:middle}
+.keys span.k2::before{border-top:3px dashed var(--gold)}
+.hbars{display:flex;flex-direction:column;gap:10px}
+.hbar{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center}
+.hbar .meter{height:26px;border-radius:6px;position:relative}
+.hbar .meter i{border-radius:6px}
+.hbar .val{position:absolute;right:8px;top:0;bottom:0;display:flex;align-items:center;font-weight:700;font-size:13px;color:var(--ink)}
+.goalcard{display:grid;gap:8px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.goalmeta{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.goalmeta b{color:var(--ink)}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font-weight:600;cursor:pointer;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+details.law{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+details.law summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px}
+details.law summary::-webkit-details-marker{display:none}
+.no{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px}
+.law .ttl{font-weight:600}
+.law .body{padding:0 14px 14px 60px;display:flex;flex-direction:column;gap:10px}
+@media (max-width:520px){.law .body{padding-left:14px}}
+.law .lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.lesson{background:var(--gold-soft);color:var(--gold-ink);border-radius:8px;padding:10px 12px;font-weight:600}
+.tick{display:flex;align-items:center;gap:8px;font-weight:600}
+.tick input{width:20px;height:20px;accent-color:var(--accent)}
+.ring{display:flex;align-items:center;gap:16px}
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.step input{width:22px;height:22px;margin-top:2px;accent-color:var(--accent)}
+.step b{display:block}
+.step span{color:var(--muted);font-size:14px}
+textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+footer{color:var(--muted);font-size:13px;max-width:75ch;padding-top:8px}
+table.risk{width:100%;border-collapse:collapse}
+.riskrow{display:grid;grid-template-columns:minmax(0,1fr) 130px minmax(0,1.6fr);gap:8px;align-items:center}
+@media (max-width:620px){.riskrow{grid-template-columns:1fr 1fr}.riskrow .inp:last-child{grid-column:1/-1}}
+.monthbar .actions{align-items:flex-end}
+.tablewrap{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:10px}
+.tablewrap.free{max-height:none}
+table.sched{width:100%;border-collapse:collapse;font-size:14px;min-width:480px}
+table.sched th,table.sched td{padding:8px 10px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
+table.sched th:first-child,table.sched td:first-child{text-align:left}
+table.sched thead th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);font-size:12px;letter-spacing:.04em;border-top:0}
+table.sched tfoot td{font-weight:700;background:var(--surface-2)}
+.mbar{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center}
+.mbar .meter{height:26px;border-radius:6px;position:relative}
+.mbar .meter i{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.mbar .val{position:absolute;right:8px;top:0;bottom:0;display:flex;align-items:center;font-weight:700;font-size:13px}
+@media (prefers-reduced-motion:no-preference){.meter i,.stack i{transition:width .3s ease}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="bar-top">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" role="img" aria-label="Rising bars logo"><rect x="3" y="17" width="5" height="10" rx="1.5" fill="var(--c-ess)"/><rect x="10" y="12" width="5" height="15" rx="1.5" fill="var(--c-save)"/><rect x="17" y="7" width="5" height="20" rx="1.5" fill="var(--c-inv)"/><rect x="24" y="2" width="4" height="25" rx="1.5" fill="var(--gold)"/></svg>
+      <span>Money Laws Planner</span>
+    </div>
+    <span class="savestate" id="saveState" role="status">Loading…</span>
+  </div>
+  <nav class="tabs" aria-label="Sections">
+    <a href="#overview" data-tab="overview">Overview</a>
+    <a href="#budget" data-tab="budget">Budget</a>
+    <a href="#months" data-tab="months">Months</a>
+    <a href="#grow" data-tab="grow">Grow and protect</a>
+    <a href="#business" data-tab="business">Business</a>
+    <a href="#goals" data-tab="goals">Goals</a>
+    <a href="#laws" data-tab="laws">27 laws</a>
+    <a href="#plan" data-tab="plan">Plan and data</a>
+  </nav>
+</header>
+
+<main>
+  <div class="banner" id="sampleBanner" hidden>
+    <span><strong>Example figures are loaded.</strong> They come from the guide and show how each tool works. Replace them with your own numbers.</span>
+    <button class="btn small" id="clearSample" type="button">Clear examples</button>
+  </div>
+  <section class="view" id="view-overview" hidden></section>
+  <section class="view" id="view-budget" hidden></section>
+  <section class="view" id="view-months" hidden></section>
+  <section class="view" id="view-grow" hidden></section>
+  <section class="view" id="view-business" hidden></section>
+  <section class="view" id="view-goals" hidden></section>
+  <section class="view" id="view-laws" hidden></section>
+  <section class="view" id="view-plan" hidden></section>
+  <footer>Built from the 27 Money Laws presentation prepared by Mac Donald Chiromo. The laws are an educational interpretation of common personal-finance themes. This planner is general financial education, not investment, tax or legal advice. Figures are illustrative, returns are not guaranteed, and you should seek qualified advice before investing or borrowing.</footer>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+"use strict";
+/* ---------- pure helpers ---------- */
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const num=v=>{const x=parseFloat(v);return Number.isFinite(x)?x:0};
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const mwk=n=>"MWK "+fmt(n);
+const pct=(n,d)=>d>0?(n/d*100):0;
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const compact=n=>n>=1e6?(+(n/1e6).toFixed(2))+"M":n>=1e3?(+(n/1e3).toFixed(1))+"K":String(Math.round(n));
+const clone=o=>JSON.parse(JSON.stringify(o));
+function growth(initial,monthly,annualPct,years){
+  const r=Math.pow(1+annualPct/100,1/12)-1;let bal=initial,contrib=initial;const pts=[{y:0,bal,contrib}];
+  for(let m=1;m<=years*12;m++){bal=bal*(1+r)+monthly;contrib+=monthly;if(m%12===0)pts.push({y:m/12,bal,contrib});}
+  return pts;
+}
+function pmt(P,annualPct,n){const r=annualPct/1200;if(n<=0)return 0;return r===0?P/n:P*r/(1-Math.pow(1+r,-n));}
+function niceScale(v){
+  if(v<=0)return{max:1,step:.25};const mag=Math.pow(10,Math.floor(Math.log10(v)));let step=mag;
+  for(const m of [.2,.25,.5,1,2]){step=m*mag;if(v/step<=5)break;}
+  return{max:Math.ceil(v/step)*step,step};
+}
+function monthsUntil(dateStr){
+  if(!dateStr)return null;const d=new Date(dateStr+"T00:00:00");if(isNaN(d))return null;
+  return (d-new Date())/(86400000*30.4375);
+}
+function addMonthsISO(n){const d=new Date();d.setMonth(d.getMonth()+n);return d.toISOString().slice(0,10);}
+function monthKey(d){d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function shiftMonth(k,n){const p=k.split("-").map(Number);return monthKey(new Date(p[0],p[1]-1+n,1));}
+function monthLabel(k){const p=k.split("-").map(Number);return new Date(p[0],p[1]-1,1).toLocaleString("en-GB",{month:"long",year:"numeric"});}
+function monthShort(k){const p=k.split("-").map(Number);return new Date(p[0],p[1]-1,1).toLocaleString("en-GB",{month:"short"})+" "+String(p[0]).slice(2);}
+function sched(initial,monthly,rate,months){const r=Math.pow(1+rate/100,1/12)-1;let bal=initial,contrib=initial;const rows=[];for(let m=1;m<=months;m++){const g=bal*r;bal=bal*(1+r)+monthly;contrib+=monthly;rows.push({m,g,bal,contrib});}return rows;}
+function merge(base,over){
+  if(Array.isArray(base)||typeof base!=="object"||base===null)return over===undefined?base:over;
+  const out={};for(const k of Object.keys(base))out[k]=merge(base[k],over&&over[k]);
+  if(over&&typeof over==="object")for(const k of Object.keys(over))if(!(k in out))out[k]=over[k];
+  return out;
+}
+
+/* ---------- reference content from the guide ---------- */
+const CATS=[["ess","Essentials","--c-ess"],["life","Lifestyle","--c-life"],["debt","Debt repayment","--c-debt"],["save","Savings","--c-save"],["inv","Investment","--c-inv"]];
+const RISKS=["Weather","Input prices","Market demand","Pests and diseases","Buyers","Storage","Selling prices","Access to working capital"];
+const PARTS=["Money management and discipline","Saving, investing and wealth creation","Planning and personal development","Business, opportunity and risk","Responsibility and independence"];
+const LAWS=[
+[1,0,"Pay Yourself First","Set aside part of every income you receive before spending on anything else.","On payday, move your savings and investment amounts first. Treat saving as a planned commitment.","Do not save what remains after spending. Spend what remains after saving."],
+[2,0,"Spend Less Than You Earn","Keep spending below income so the gap is not financed by borrowing, depleted savings or delayed payments.","Plan expenses below your income and keep a portion for savings, investment and security.","Financial stability begins when you consistently retain part of your income."],
+[3,0,"Make Your Money Work for You","Put capital into productive opportunities instead of depending only on your time and employment.","Research one enterprise or regulated product and calculate net profit, not sales alone.","Build income-generating assets instead of depending exclusively on employment."],
+[4,0,"Understand Assets and Liabilities","An asset is a resource with economic value you own or control. A liability is an obligation you must pay.","List what you own and what you owe. Mark which items earn money and which cost money.","Prioritise assets that preserve value or generate income, and manage liabilities carefully."],
+[5,0,"Live Below Your Means","Keep your lifestyle affordable relative to income. Being able to afford a purchase does not make it wise.","When income rises, upgrade your lifestyle slowly and direct a share of the increase to savings.","Financial strength is measured by your position, not by how expensive your lifestyle looks."],
+[6,0,"Avoid Bad Debt","Avoid borrowing for unnecessary consumption. Debt can help when it funds a productive investment you can repay.","Before borrowing, work out repayment, interest and whether the investment's cash flow covers it.","Borrow strategically, understand the full cost and avoid debt that weakens your finances."],
+[7,1,"Invest Consistently","Make investing a regular habit. Small contributions build capital over time.","Choose a monthly amount, such as MWK 50,000, and invest it every month.","Consistency is more useful than waiting until you have a large amount to invest."],
+[8,1,"Understand Compound Interest","Returns are earned on your original investment and on earlier returns. Time and reinvestment do the work.","Run the growth calculator and compare starting now with starting later.","Start early, reinvest where appropriate and give investments time to grow."],
+[9,1,"Build Multiple Sources of Income","Develop income beyond one employer or business to improve resilience and saving capacity.","Pick one opportunity you can manage well, such as poultry, farming, rentals, consultancy or freelance work.","Diversify income so your financial future does not depend on one employer."],
+[10,1,"Create an Emergency Fund","Keep money for medical costs, urgent repairs, unemployment or essential family needs.","Aim for three to six months of essential expenses in a safe, accessible place.","An emergency fund protects your financial plan when unexpected events occur."],
+[11,1,"Invest in Financial Education","Learn budgeting, interest, inflation, tax, investment products, business management and risk.","Before a large investment, estimate capital, costs, profit, cash flow, break-even and return.","Improve the quality of your financial decisions by improving your financial knowledge."],
+[12,1,"Protect Your Wealth","Guard against avoidable losses, fraud and poorly understood risks, with good records.","Consider insurance, emergency savings, secure institutions, documented ownership and diversification. Verify providers.","Building wealth matters, but protecting it is equally important."],
+[13,2,"Set Clear Financial Goals","Define what you want, what it costs and when you want it. Clear goals guide your allocation.","Add a goal with an amount and a date on the Goals tab.","Specific financial goals give direction to saving, spending and investing."],
+[14,2,"Track Every Kwacha","Record income, expenses, savings, debt repayments and investments to see your patterns.","Log this month's spending in the Budget tab and review it at month-end.","What you measure, you can manage."],
+[15,2,"Avoid Lifestyle Inflation","When spending rises with every pay rise, financial progress stalls.","Use the raise planner on the Budget tab to decide how much of a raise you save.","Allow your wealth to grow faster than your lifestyle."],
+[16,2,"Think Long-Term","Judge decisions against long-term goals, not only immediate satisfaction.","Before a non-essential purchase, ask where the decision leaves you in five or ten years.","Consider where a decision will leave you in five or ten years."],
+[17,2,"Invest in Income-Producing Assets","Prioritise assets that generate cash flow or can appreciate, and weigh cost, risk, liquidity and returns.","Use the Business tab to count every cost across the full production cycle.","Focus on measurable economic value, not appearances or projected sales alone."],
+[18,2,"Understand the Power of Ownership","Ownership gives you an interest in an asset's earnings and long-term value, with costs and risk.","While employed, build a stake in a productive venture and keep its records.","Work to earn income while gradually building ownership of productive assets."],
+[19,2,"Develop Valuable Skills","Skills that solve problems and earn income open doors to promotion and self-employment.","Choose one skill to strengthen this quarter, such as financial management or data analysis.","Your skills can be among your most valuable income-generating assets."],
+[20,2,"Surround Yourself With Financially Responsible People","Your network influences your habits, decisions and information.","Join a business network, savings group or investment club, and verify recommendations yourself.","Build relationships that support informed and responsible financial decisions."],
+[21,3,"Do Not Depend on One Source of Income","Reduce vulnerability by having income that is not tied to one employer, customer or activity.","Add a second income line on the Budget tab and see how your total changes.","Diversification can reduce dependence, although it does not eliminate risk."],
+[22,3,"Make Money Through Solving Problems","Businesses create value by meeting real needs people will pay for.","Name a problem, who has it, whether they will pay, and how you would deliver reliably.","Look for a real problem that people are willing and able to pay you to solve."],
+[23,3,"Be Patient With Wealth Creation","Sustainable wealth takes time, consistent saving and reinvestment. Be wary of unusually high promised returns.","Set a monthly amount and a ten-year view in the growth calculator.","Focus on sustainable progress rather than overnight success."],
+[24,3,"Learn to Manage Risk","Every investment carries risk. Assess likelihood and impact of loss before committing capital.","Rate each risk on the Business tab and write a contingency plan for the high ones.","Understand the risks associated with returns and take steps to manage them."],
+[25,3,"Use Money to Create Opportunities","Spend on things that raise your future earning capacity: qualifications, equipment, tools, technology, land, working capital.","Compare the cost of an opportunity with a realistic expected benefit.","Use money strategically to expand future opportunities."],
+[26,4,"Give Back and Help Others","Use resources responsibly to support family, employees and communities, without harming your own stability.","After obligations, taxes, savings and reinvestment, decide an affordable amount to give.","Financial success can create positive social impact when resources are used responsibly."],
+[27,4,"Work Towards Financial Independence","Build assets and reliable income that cover your living expenses without depending entirely on active employment.","Estimate monthly living costs and the income lines that could cover them.","The objective is to build financial choices and reduce dependence on a single source of active income."]
+];
+const PLAN=[
+["Prepare a monthly budget","Record income, essential expenses, debt obligations, savings and investments."],
+["Save consistently","Set aside a realistic portion of income, such as 10%, where your circumstances allow."],
+["Build an emergency fund","Work towards three to six months of essential living expenses."],
+["Develop one additional income stream","Choose a realistic business or investment opportunity and assess its costs, market and risks."],
+["Reinvest part of the returns","Use a planned share of profits to strengthen the business or investment rather than consuming all proceeds."]
+];
+
+/* ---------- state ---------- */
+const LS="moneylaws.planner.v1";
+function blank(){const s={v:1,sample:false,cur:monthKey(),months:{},
+  incomes:[{id:uid(),name:"Employment",amount:0}],expenses:[],savePct:10,debtLimit:30,
+  raise:{old:0,now:0,share:50},
+  invest:{initial:0,monthly:0,rate:10,years:10},
+  emergency:{months:6,current:0,monthly:0},
+  loan:{amount:0,rate:0,months:12,cashflow:0},
+  biz:{name:"My enterprise",capital:0,birds:0,mortality:0,unsold:0,price:0,cycles:1,costs:[{id:uid(),name:"Chicks",amount:0},{id:uid(),name:"Feed",amount:0},{id:uid(),name:"Medication",amount:0},{id:uid(),name:"Labour",amount:0},{id:uid(),name:"Utilities",amount:0},{id:uid(),name:"Transport",amount:0}]},
+  risks:Object.fromEntries(RISKS.map(r=>[r,{lvl:"",plan:""}])),
+  goals:[],laws:{},plan:{}};s.months[s.cur]={incomes:s.incomes,expenses:s.expenses};return s;}
+function sample(){const s=blank();s.sample=true;
+  s.incomes=[{id:uid(),name:"Employment",amount:1000000},{id:uid(),name:"Poultry business (net profit)",amount:300000}];
+  const E=(n,c,a)=>({id:uid(),name:n,cat:c,amount:a});
+  s.expenses=[E("Food","ess",150000),E("Rent","ess",120000),E("Transport","ess",60000),E("Utilities","ess",40000),E("Family support","ess",30000),E("Clothing and household","life",180000),E("Leisure and eating out","life",120000),E("Loan repayment","debt",80000),E("Emergency fund deposit","save",130000),E("Monthly investment","inv",100000)];
+  s.raise={old:800000,now:1200000,share:50};
+  s.invest={initial:1000000,monthly:50000,rate:10,years:5};
+  s.emergency={months:6,current:600000,monthly:130000};
+  s.loan={amount:1000000,rate:24,months:24,cashflow:0};
+  s.biz={name:"Poultry cycle (example)",capital:4500000,birds:300,mortality:5,unsold:2,price:12500,cycles:3,costs:[{id:uid(),name:"Chicks",amount:750000},{id:uid(),name:"Feed",amount:1500000},{id:uid(),name:"Medication",amount:150000},{id:uid(),name:"Labour",amount:200000},{id:uid(),name:"Utilities",amount:100000},{id:uid(),name:"Transport",amount:120000}]};
+  s.risks.Weather={lvl:"medium",plan:"Keep stock under cover and watch forecasts."};s.risks["Input prices"]={lvl:"high",plan:"Compare suppliers and buy feed in bulk when prices dip."};
+  s.goals=[{id:uid(),name:"Save MWK 2,000,000",target:2000000,saved:600000,date:addMonthsISO(12)},{id:uid(),name:"Six-month emergency fund",target:2400000,saved:600000,date:addMonthsISO(18)}];
+  const k0=monthKey(),k1=shiftMonth(k0,-1),k2=shiftMonth(k0,-2);
+  const variant=(f,d)=>({incomes:s.incomes.map(i=>({...i,id:uid(),amount:Math.round(num(i.amount)*f/1000)*1000})),expenses:s.expenses.map(e=>({...e,id:uid(),amount:Math.round(num(e.amount)*(e.cat==="life"?d:1)/1000)*1000}))});
+  s.months[k2]=variant(.92,1.25);s.months[k1]=variant(.97,1.1);s.months[k0]={incomes:s.incomes,expenses:s.expenses};
+  return s;}
+let state=sample();
+function normalize(d){const m=merge(blank(),d);m.v=1;if(!d.months||!d.months[m.cur])m.months[m.cur]={incomes:m.incomes,expenses:m.expenses};m.incomes=m.months[m.cur].incomes;m.expenses=m.months[m.cur].expenses;return m;}
+
+/* ---------- derived numbers ---------- */
+function totals(s){
+  const income=s.incomes.reduce((a,x)=>a+num(x.amount),0);const by={ess:0,life:0,debt:0,save:0,inv:0};
+  s.expenses.forEach(e=>{if(by[e.cat]!==undefined)by[e.cat]+=num(e.amount);});
+  const out=by.ess+by.life+by.debt+by.save+by.inv;
+  return{income,by,out,spend:by.ess+by.life+by.debt,surplus:income-out,rate:pct(by.save+by.inv,income),logged:s.expenses.length};
+}
+function bizCalc(b){
+  const survived=num(b.birds)*(1-num(b.mortality)/100),sellable=survived*(1-num(b.unsold)/100);
+  const revenue=sellable*num(b.price),costs=b.costs.reduce((a,c)=>a+num(c.amount),0),net=revenue-costs;
+  return{survived,sellable,revenue,costs,net,roi:num(b.capital)>0?net/num(b.capital)*100:null,margin:revenue>0?net/revenue*100:null,bePrice:sellable>0?costs/sellable:null,beBirds:num(b.price)>0?costs/num(b.price):null,annual:net*num(b.cycles)};
+}
+
+/* ---------- view markup ---------- */
+function field(id,label,bind,o){o=o||{};
+  return `<label class="f" for="${id}"><span>${label}</span><span class="inp"><input id="${id}" type="${o.type||"number"}" ${o.type==="text"?"":'inputmode="decimal" min="0"'} step="${o.step||1}" data-bind="${bind}" data-t="${o.type==="text"?"s":"n"}">${o.suffix?`<em>${o.suffix}</em>`:""}</span>${o.hint?`<span class="hint">${o.hint}</span>`:""}</label>`;
+}
+function selectField(id,label,bind,opts){
+  return `<label class="f" for="${id}"><span>${label}</span><span class="inp"><select id="${id}" data-bind="${bind}" data-t="n">${opts.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join("")}</select></span></label>`;
+}
+function buildViews(){
+  $("#view-overview").innerHTML=`
+    <div><h2 id="ov-h">Where you stand</h2><p class="lead">Your income, spending and savings at a glance, checked against the habits in the 27 laws. Edit the numbers on the Budget tab.</p></div>
+    <div class="tiles" id="ov-tiles"></div>
+    <div class="grid wide">
+      <div class="card"><h3>Where your income goes</h3><div id="ov-alloc"></div></div>
+      <div class="card"><h3>Law check</h3><div class="checks" id="ov-checks"></div></div>
+    </div>
+    <div class="card"><div class="ring"><div style="flex:1;min-width:0"><h3>Laws you practise</h3><p class="sub" id="ov-lawtext"></p><div class="meter" style="margin-top:10px"><i id="ov-lawbar" style="width:0"></i></div></div><a class="btn ghost" href="#laws">Open the 27 laws</a></div></div>`;
+
+  $("#view-budget").innerHTML=`
+    <div><h2>Monthly budget</h2><p class="lead">Law 14: track every kwacha. Add each income line and every expense, then give each one a category. Savings and investments count as money paid to yourself. Each month has its own figures.</p></div>
+    <div class="card monthbar"><div class="actions"><button class="btn ghost" id="mPrev" type="button">‹ Previous</button><label class="f" for="mPick"><span>Month</span><span class="inp"><input id="mPick" type="month"></span></label><button class="btn ghost" id="mNext" type="button">Next ›</button><button class="btn" id="mCopy" type="button">Copy last month's budget</button></div><p class="hint" id="mNote"></p></div>
+    <div class="grid wide">
+      <div class="card"><h3>Income</h3><div class="rows" id="incList"></div><div><button class="btn ghost small" id="addInc" type="button">Add income line</button></div></div>
+      <div class="card"><h3>Allocation</h3><div id="bd-alloc"></div><div class="kv" id="bd-kv"></div></div>
+    </div>
+    <div class="card"><h3>Expenses and money set aside</h3><div class="rows" id="expList"></div><div><button class="btn ghost small" id="addExp" type="button">Add expense</button></div></div>
+    <div class="grid wide">
+      <div class="card"><h3>Pay yourself first</h3><p class="sub">Law 1: decide the share of income you set aside before anything else.</p>
+        <div class="fields">${field("savePct","Share to save and invest","savePct",{suffix:"%",step:1})}</div><div id="pyf"></div></div>
+      <div class="card"><h3>Raise planner</h3><p class="sub">Law 15: decide in advance what a pay rise does for you.</p>
+        <div class="fields">${field("raiseOld","Income before","raise.old",{suffix:"MWK",step:10000})}${field("raiseNow","Income after","raise.now",{suffix:"MWK",step:10000})}${field("raiseShare","Share of raise to save or invest","raise.share",{suffix:"%"})}</div><div id="raiseOut"></div></div>
+    </div>`;
+
+  $("#view-months").innerHTML=`
+    <div><h2>Month by month</h2><p class="lead">Every month you have entered, side by side. Open a month to edit it. Tracking month by month shows whether your saving habit is holding.</p><div class="actions" style="margin-top:12px"><button class="btn" data-xlsx type="button">Download Excel report</button><span class="hint" id="xlMsg" role="status"></span></div></div>
+    <div class="card"><h3>Monthly summary</h3><div class="tablewrap free" id="mt-table"></div></div>
+    <div class="grid wide"><div class="card"><h3>Income and money set aside</h3><div class="hbars" id="mt-bars"></div><div class="legend"><span><span class="dot" style="background:var(--c-left)"></span>Income</span><span><span class="dot" style="background:var(--c-save)"></span>Saved and invested</span></div></div>
+    <div class="card"><h3>Next 12 months at this month's pace</h3><p class="sub" id="mt-psub"></p><div class="tablewrap free" id="mt-proj"></div></div></div>`;
+  $("#view-grow").innerHTML=`
+    <div><h2>Grow and protect</h2><p class="lead">Three calculators for laws 7, 8, 10 and 6. Results are illustrative. Returns are not guaranteed and fees and taxes are not included.</p></div>
+    <div class="card"><h3>Investing and compound growth</h3>
+      <div class="fields">${field("invInit","Starting amount","invest.initial",{suffix:"MWK",step:10000})}${field("invMon","Monthly contribution","invest.monthly",{suffix:"MWK",step:5000})}${field("invRate","Annual return","invest.rate",{suffix:"%",step:.5})}${field("invYears","Years","invest.years",{suffix:"yrs"})}</div>
+      <div class="kv" id="gr-kv"></div>
+      <div id="gr-chart"></div>
+      <div class="keys"><span>Balance with returns</span><span class="k2">Money you put in</span></div>
+      <p class="hint">Returns compound monthly at a rate that equals your annual return over a full year, with each contribution added at month-end.</p>
+      <details class="law"><summary style="grid-template-columns:1fr auto"><span class="ttl">Month-by-month schedule</span><span class="pill none">Show</span></summary><div class="body" style="padding-left:14px"><div class="tablewrap" id="gr-sched"></div></div></details></div>
+    <div class="grid wide">
+      <div class="card"><h3>Emergency fund</h3><p class="sub" id="em-sub"></p>
+        <div class="fields">${selectField("emMonths","Months of cover","emergency.months",[[3,"3 months"],[4,"4 months"],[5,"5 months"],[6,"6 months"]])}${field("emCur","Saved so far","emergency.current",{suffix:"MWK",step:10000})}${field("emMon","Added each month","emergency.monthly",{suffix:"MWK",step:5000})}</div>
+        <div class="kv" id="em-kv"></div><div id="em-meter"></div></div>
+      <div class="card"><h3>Debt check</h3><p class="sub">Law 6: see the full cost before you borrow.</p>
+        <div class="fields">${field("lnAmt","Amount borrowed","loan.amount",{suffix:"MWK",step:10000})}${field("lnRate","Annual interest","loan.rate",{suffix:"%",step:.5})}${field("lnMon","Months to repay","loan.months",{suffix:"mo"})}${field("lnCf","Monthly cash flow the loan creates","loan.cashflow",{suffix:"MWK",step:5000,hint:"Leave at 0 if it funds consumption."})}</div>
+        <div class="kv" id="ln-kv"></div><div id="ln-verdict"></div>
+        <p class="hint">Assumes equal monthly repayments on a reducing balance. Your lender's fees and terms will differ.</p></div>
+    </div>`;
+
+  $("#view-business").innerHTML=`
+    <div><h2>Business check</h2><p class="lead">Laws 17 and 24: count every cost over a full production cycle and look at net profit, not sales alone. The example is a poultry cycle. Rename the cost lines for any enterprise.</p></div>
+    <div class="grid wide">
+      <div class="card"><h3>Enterprise</h3>
+        <div class="fields">${field("bzName","Name","biz.name",{type:"text"})}${field("bzCap","Capital invested","biz.capital",{suffix:"MWK",step:50000})}${field("bzBirds","Units started (birds)","biz.birds",{})}${field("bzMort","Mortality","biz.mortality",{suffix:"%",step:.5})}${field("bzUns","Unsold stock","biz.unsold",{suffix:"%",step:.5})}${field("bzPrice","Selling price per unit","biz.price",{suffix:"MWK",step:100})}${field("bzCyc","Cycles per year","biz.cycles",{})}</div></div>
+      <div class="card"><h3>Costs for one cycle</h3><div class="rows" id="costList"></div><div><button class="btn ghost small" id="addCost" type="button">Add cost</button></div></div>
+    </div>
+    <div class="card"><h3>Result for one cycle</h3><div class="kv" id="bz-kv"></div><div class="hbars" id="bz-bars"></div><div id="bz-verdict"></div></div>
+    <div class="card"><h3>Risk register</h3><p class="sub">Rate each risk before investing. Write a contingency plan for anything rated high.</p><div class="rows" id="riskList"></div><div id="riskSum"></div></div>`;
+
+  $("#view-goals").innerHTML=`
+    <div><h2>Financial goals</h2><p class="lead">Law 13: a goal has an amount and a date. The planner works out what you need to put aside each month.</p></div>
+    <div class="card"><h3>Add a goal</h3>
+      <div class="fields">${field("gName","Goal","newGoal.name",{type:"text"})}${field("gTarget","Target","newGoal.target",{suffix:"MWK",step:10000})}${field("gSaved","Already saved","newGoal.saved",{suffix:"MWK",step:10000})}<label class="f" for="gDate"><span>Target date</span><span class="inp"><input id="gDate" type="date" data-bind="newGoal.date" data-t="s"></span></label></div>
+      <div><button class="btn" id="addGoal" type="button">Add goal</button></div></div>
+    <div class="rows" id="goalList"></div>`;
+
+  $("#view-laws").innerHTML=`
+    <div><h2>The 27 laws</h2><p class="lead">Open a law to see what it means and one thing to try. Tick the laws you already practise.</p></div>
+    <div class="card"><div class="ring"><div style="flex:1;min-width:0"><h3 id="lw-count"></h3><div class="meter" style="margin-top:10px"><i id="lw-bar" style="width:0"></i></div></div></div>
+      <div class="chips" id="lw-filter"></div></div>
+    <div class="rows" id="lawList"></div>`;
+
+  $("#view-plan").innerHTML=`
+    <div><h2>Plan and data</h2><p class="lead">Do not try to apply all 27 principles at once. Start with these five measurable actions.</p></div>
+    <div class="steps" id="planList"></div>
+    <div class="card"><h3>Your data</h3><p class="sub" id="dataSub"></p>
+      <div class="actions"><button class="btn" data-xlsx type="button">Download Excel report</button><button class="btn ghost" id="copyBackup" type="button">Copy backup</button><button class="btn ghost" id="showRestore" type="button">Restore from backup</button><button class="btn danger" id="resetAll" type="button">Reset everything</button></div>
+      <div id="restoreBox" hidden><label class="f" for="restoreText"><span>Paste a backup here</span></label><textarea id="restoreText" spellcheck="false"></textarea><div class="actions"><button class="btn" id="doRestore" type="button">Restore</button></div></div>
+      <p class="hint" id="dataMsg" role="status"></p></div>`;
+}
+
+/* ---------- rendering ---------- */
+function allocHtml(t){
+  const total=Math.max(t.income,t.out)||1;
+  const segs=CATS.map(c=>({k:c[0],name:c[1],css:c[2],v:t.by[c[0]]}));
+  if(t.surplus>0)segs.push({k:"left",name:"Left over",css:"--c-left",v:t.surplus});
+  return `<div class="stack" role="img" aria-label="Income allocation">${segs.filter(s=>s.v>0).map(s=>`<i style="width:${pct(s.v,total)}%;background:var(${s.css})"></i>`).join("")}</div>
+  <div class="legend" style="margin-top:12px">${segs.map(s=>`<span><span class="dot" style="background:var(${s.css})"></span>${s.name} <b>${mwk(s.v)}</b> (${Math.round(pct(s.v,total))}%)</span>`).join("")}</div>`;
+}
+function statusPill(s){return s==="good"?'<span class="pill good">✓ Good</span>':s==="warn"?'<span class="pill warn">! Watch</span>':s==="bad"?'<span class="pill bad">✕ Act</span>':'<span class="pill none">– Not set</span>';}
+function checks(){
+  const t=totals(state),list=[];
+  const rate=t.rate;
+  list.push([1,"Pay yourself first",t.income<=0?"none":rate>=state.savePct?"good":rate>0?"warn":"bad",t.income<=0?"Add your income to see this.":`You set aside ${rate.toFixed(1)}% of income. Your target is ${state.savePct}%.`]);
+  list.push([2,"Spend less than you earn",t.income<=0?"none":t.surplus>=0?"good":"bad",t.income<=0?"Add your income to see this.":t.surplus>=0?`Everything you log fits within income, with ${mwk(t.surplus)} left over.`:`Outflows exceed income by ${mwk(-t.surplus)}.`]);
+  const share=pct(t.by.debt,t.income);
+  list.push([6,"Keep debt under control",t.income<=0?"none":share<=state.debtLimit?"good":share<=state.debtLimit+10?"warn":"bad",t.income<=0?"Add your income to see this.":`Debt repayments take ${share.toFixed(1)}% of income. Your limit is ${state.debtLimit}%.`]);
+  const months=t.by.ess>0?num(state.emergency.current)/t.by.ess:0;
+  list.push([10,"Emergency fund",t.by.ess<=0?"none":months>=3?"good":months>=1?"warn":"bad",t.by.ess<=0?"Log your essential expenses to see this.":`You have ${months.toFixed(1)} months of essential expenses saved. Aim for 3 to 6.`]);
+  const n=state.incomes.filter(i=>num(i.amount)>0).length;
+  list.push([9,"More than one income",n>=2?"good":n===1?"warn":"none",n>=2?`${n} income lines are active.`:"You rely on one income line. Consider adding another."]);
+  list.push([14,"Track every kwacha",t.logged>=5?"good":t.logged>0?"warn":"bad",t.logged>=5?`${t.logged} items are logged.`:"Log all of your spending and money set aside for the month."]);
+  list.push([13,"Clear goals",state.goals.length>0?"good":"warn",state.goals.length>0?`${state.goals.length} goal${state.goals.length>1?"s":""} with dates.`:"Add a goal with an amount and a date."]);
+  const high=RISKS.filter(r=>state.risks[r]&&state.risks[r].lvl==="high"&&!state.risks[r].plan.trim());
+  const rated=RISKS.filter(r=>state.risks[r]&&state.risks[r].lvl).length;
+  list.push([24,"Manage risk",rated===0?"none":high.length?"warn":"good",rated===0?"Rate your enterprise risks on the Business tab.":high.length?`${high.length} high risk${high.length>1?"s":""} without a contingency plan.`:"Every high risk has a plan."]);
+  return list;
+}
+function renderOverview(){
+  const t=totals(state);
+  $("#ov-h").textContent="Where you stand in "+monthLabel(state.cur);
+  $("#ov-tiles").innerHTML=[["Monthly income",mwk(t.income),`${state.incomes.length} line${state.incomes.length===1?"":"s"}`],["Spending",mwk(t.spend),"Essentials, lifestyle and debt"],["Saved and invested",mwk(t.by.save+t.by.inv),`${t.rate.toFixed(1)}% of income`],["Left over",mwk(t.surplus),t.surplus>=0?"Not yet allocated":"Over your income"]].map(x=>`<div class="tile"><div class="k">${x[0]}</div><div class="v">${x[1]}</div><div class="n">${x[2]}</div></div>`).join("");
+  $("#ov-alloc").innerHTML=t.income>0||t.out>0?allocHtml(t):'<p class="sub">Add income and expenses on the Budget tab.</p>';
+  $("#ov-checks").innerHTML=checks().map(c=>`<div class="check">${statusPill(c[2])}<div class="t">${c[1]} <span class="hint">Law ${c[0]}</span></div><div class="d">${c[3]}</div></div>`).join("");
+  const done=Object.values(state.laws).filter(Boolean).length;
+  $("#ov-lawtext").textContent=`${done} of 27 laws ticked as practised.`;$("#ov-lawbar").style.width=pct(done,27)+"%";
+}
+function renderBudget(){
+  const t=totals(state);
+  $("#mPick").value=state.cur;
+  $("#mNote").textContent=monthLabel(state.cur)+(state.cur===monthKey()?" (this month). ":". ")+"The figures below belong to this month only.";
+  $("#bd-alloc").innerHTML=allocHtml(t);
+  $("#bd-kv").innerHTML=[["Income",t.income],["Out",t.out],["Left over",t.surplus]].map(x=>`<div><span>${x[0]}</span><b>${mwk(x[1])}</b></div>`).join("");
+  const target=t.income*num(state.savePct)/100,actual=t.by.save+t.by.inv,diff=actual-target;
+  $("#pyf").innerHTML=`<div class="kv"><div><span>Target each month</span><b>${mwk(target)}</b></div><div><span>Actually set aside</span><b>${mwk(actual)}</b></div></div><div class="verdict ${t.income<=0?"none":diff>=0?"good":"warn"}" style="margin-top:12px">${t.income<=0?"Add your income to compare.":diff>=0?`You are ${mwk(diff)} above your target.`:`You are ${mwk(-diff)} short of your target. Move it on payday.`}</div>`;
+  const inc=num(state.raise.now)-num(state.raise.old),keep=Math.max(inc,0)*num(state.raise.share)/100;
+  $("#raiseOut").innerHTML=`<div class="kv"><div><span>Extra income</span><b>${mwk(inc)}</b></div><div><span>Save or invest</span><b>${mwk(keep)}</b></div><div><span>Upgrade lifestyle</span><b>${mwk(Math.max(inc,0)-keep)}</b></div></div>`;
+}
+function growthChart(pts){
+  const W=640,H=290,L=58,R=14,T=22,B=34,iw=W-L-R,ih=H-T-B;
+  const maxV=Math.max(...pts.map(p=>Math.max(p.bal,p.contrib)),1),sc=niceScale(maxV),Y=pts[pts.length-1].y||1;
+  const x=v=>L+v/Y*iw,y=v=>T+ih-v/sc.max*ih;let g="";
+  for(let v=0;v<=sc.max+1e-6;v+=sc.step){g+=`<path class="gl" d="M${L} ${y(v).toFixed(1)}H${W-R}"/><text class="ax" x="${L-8}" y="${(y(v)+4).toFixed(1)}" text-anchor="end">${compact(v)}</text>`;}
+  const stepY=Y<=10?1:Y<=20?2:Y<=40?5:10;
+  for(let yr=0;yr<=Y;yr+=stepY){g+=`<text class="ax" x="${x(yr).toFixed(1)}" y="${H-10}" text-anchor="middle">${yr}</text>`;}
+  g+=`<text class="ax" x="${W-R}" y="${H-10}" text-anchor="end"></text>`;
+  const bal=pts.map((p,i)=>(i?"L":"M")+x(p.y).toFixed(1)+" "+y(p.bal).toFixed(1)).join("");
+  const con=pts.map((p,i)=>(i?"L":"M")+x(p.y).toFixed(1)+" "+y(p.contrib).toFixed(1)).join("");
+  const last=pts[pts.length-1];
+  const area=bal+`L${x(last.y).toFixed(1)} ${y(0).toFixed(1)}L${x(0).toFixed(1)} ${y(0).toFixed(1)}Z`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Investment balance by year">${g}
+  <path class="a1" d="${area}"/><path class="l2" d="${con}"/><path class="l1" d="${bal}"/>
+  <circle class="d2" cx="${x(last.y).toFixed(1)}" cy="${y(last.contrib).toFixed(1)}" r="5"/><circle class="d1" cx="${x(last.y).toFixed(1)}" cy="${y(last.bal).toFixed(1)}" r="5"/>
+  <text class="lb" x="${(x(last.y)-8).toFixed(1)}" y="${(y(last.bal)-10).toFixed(1)}" text-anchor="end">${compact(last.bal)}</text>
+  <text class="ax" x="${W-R}" y="${H-1}" text-anchor="end">Years</text></svg>`;
+}
+function renderGrow(){
+  const iv=state.invest,yrs=Math.min(60,Math.max(1,Math.round(num(iv.years))));
+  const pts=growth(num(iv.initial),num(iv.monthly),num(iv.rate),yrs),last=pts[pts.length-1];
+  $("#gr-kv").innerHTML=[["Money you put in",last.contrib],["Growth from returns",last.bal-last.contrib],["Balance after "+yrs+" yr"+(yrs>1?"s":""),last.bal]].map(x=>`<div><span>${x[0]}</span><b>${mwk(x[1])}</b></div>`).join("");
+  $("#gr-chart").innerHTML=growthChart(pts);
+  $("#gr-sched").innerHTML=`<table class="sched"><thead><tr><th>Month</th><th>Added</th><th>Returns</th><th>Balance</th></tr></thead><tbody>${sched(num(iv.initial),num(iv.monthly),num(iv.rate),yrs*12).map(r=>`<tr><td>Month ${r.m} · Yr ${Math.ceil(r.m/12)}</td><td>${fmt(num(iv.monthly))}</td><td>${fmt(r.g)}</td><td>${fmt(r.bal)}</td></tr>`).join("")}</tbody></table>`;
+  const t=totals(state),ess=t.by.ess,mo=num(state.emergency.months),target=ess*mo,cur=num(state.emergency.current),gap=Math.max(target-cur,0),add=num(state.emergency.monthly);
+  $("#em-sub").textContent=ess>0?`Based on ${mwk(ess)} of essential expenses in your budget. A three-to-six-month fund is ${mwk(ess*3)} to ${mwk(ess*6)}.`:"Log essential expenses in your budget to size your fund.";
+  $("#em-kv").innerHTML=[["Target",target],["Still needed",gap],["Months to reach it",null]].map((x,i)=>`<div><span>${x[0]}</span><b>${i<2?mwk(x[1]):(gap<=0?"Reached":add>0?Math.ceil(gap/add)+" mo":"Set a monthly amount")}</b></div>`).join("");
+  $("#em-meter").innerHTML=`<div class="meter" role="img" aria-label="Emergency fund progress"><i style="width:${Math.min(100,pct(cur,target))}%"></i></div><p class="hint">${target>0?Math.round(Math.min(100,pct(cur,target)))+"% of target saved":""}</p>`;
+  const L=state.loan,P=num(L.amount),n=Math.round(num(L.months)),m=pmt(P,num(L.rate),n),totalPaid=m*n,cf=num(L.cashflow);
+  $("#ln-kv").innerHTML=[["Monthly repayment",m],["Total interest",Math.max(totalPaid-P,0)],["Total you repay",totalPaid]].map(x=>`<div><span>${x[0]}</span><b>${mwk(x[1])}</b></div>`).join("");
+  let v;
+  if(P<=0||n<=0)v=["none","Enter an amount and a repayment period."];
+  else if(cf<=0){const sh=pct(m,t.income);v=t.income>0?[sh<=state.debtLimit?"warn":"bad",`This repayment comes out of your existing income: ${sh.toFixed(1)}% of ${mwk(t.income)}. Debt for consumption rarely improves your finances.`]:["warn","This repayment comes out of your existing income. Add your income to see the share."];}
+  else{const cov=cf/m;v=[cov>=1.5?"good":cov>=1?"warn":"bad",`The investment would cover ${cov.toFixed(2)}x the repayment. ${cov>=1.5?"That covers it comfortably.":cov>=1?"That is tight. Costs or delays could leave you short.":"The cash flow does not cover the repayment."} A cover of 1.5x or more is a common rule of thumb.`];}
+  $("#ln-verdict").innerHTML=`<div class="verdict ${v[0]}">${v[1]}</div>`;
+}
+function renderBiz(){
+  const c=bizCalc(state.biz);
+  $("#bz-kv").innerHTML=[["Units sold",fmt(c.sellable)],["Revenue",mwk(c.revenue)],["Total costs",mwk(c.costs)],["Net profit",mwk(c.net)],["Return on capital",c.roi==null?"n/a":c.roi.toFixed(1)+"%"],["Profit margin",c.margin==null?"n/a":c.margin.toFixed(1)+"%"],["Break-even price per unit",c.bePrice==null?"n/a":mwk(c.bePrice)],["Net profit per year",mwk(c.annual)]].map(x=>`<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+  const mx=Math.max(c.revenue,c.costs,1);
+  $("#bz-bars").innerHTML=[["Revenue",c.revenue,"--accent"],["Costs",c.costs,"--c-life"]].map(b=>`<div class="hbar"><span>${b[0]}</span><div class="meter"><i style="width:${pct(b[1],mx)}%;background:var(${b[2]})"></i><span class="val">${mwk(b[1])}</span></div></div>`).join("");
+  const ok=c.revenue>0;
+  $("#bz-verdict").innerHTML=`<div class="verdict ${!ok?"none":c.net>0?"good":"bad"}">${!ok?"Enter units and a selling price to see the result.":c.net>0?`After every cost, one cycle leaves ${mwk(c.net)}. You break even at ${mwk(c.bePrice)} per unit against your price of ${mwk(state.biz.price)}.`:`After every cost, one cycle loses ${mwk(-c.net)}. You need at least ${mwk(c.bePrice)} per unit to break even.`}</div>`;
+  const rated=RISKS.filter(r=>state.risks[r].lvl),high=RISKS.filter(r=>state.risks[r].lvl==="high");
+  $("#riskSum").innerHTML=`<div class="verdict ${!rated.length?"none":high.length?"warn":"good"}">${!rated.length?"No risks rated yet.":`${rated.length} of ${RISKS.length} rated. ${high.length} rated high.`}</div>`;
+}
+function dueText(g){
+  const left=num(g.target)-num(g.saved),mo=monthsUntil(g.date);
+  if(left<=0)return{need:0,txt:"Goal reached",cls:"good"};
+  if(mo==null)return{need:null,txt:"Add a target date",cls:"none"};
+  if(mo<=0)return{need:left,txt:"Date passed. Move the date or add to the goal.",cls:"bad"};
+  return{need:left/Math.max(1,Math.ceil(mo)),txt:`${Math.ceil(mo)} month${Math.ceil(mo)>1?"s":""} left`,cls:"warn"};
+}
+function renderGoals(){
+  const el=$("#goalList");
+  if(!state.goals.length){el.innerHTML='<div class="card"><p class="sub">No goals yet. Add one above, for example saving MWK 2,000,000 within 12 months.</p></div>';return;}
+  el.innerHTML=state.goals.map(g=>{const d=dueText(g),p=Math.min(100,pct(num(g.saved),num(g.target)));
+    return `<div class="goalcard" data-id="${g.id}"><div class="rowline goal">
+      <label class="inp name"><input aria-label="Goal name" id="gn-${g.id}" type="text" data-f="name" data-t="s" value="${esc(g.name)}"></label>
+      <label class="inp"><input aria-label="Target" id="gt-${g.id}" type="number" inputmode="decimal" min="0" step="10000" data-f="target" data-t="n" value="${num(g.target)}"><em>MWK</em></label>
+      <label class="inp"><input aria-label="Saved" id="gs-${g.id}" type="number" inputmode="decimal" min="0" step="10000" data-f="saved" data-t="n" value="${num(g.saved)}"><em>MWK</em></label>
+      <label class="inp"><input aria-label="Target date" id="gd-${g.id}" type="date" data-f="date" data-t="s" value="${esc(g.date)}"></label>
+      <button class="x" data-del aria-label="Delete goal" type="button">×</button></div>
+      <div class="meter" role="img" aria-label="Goal progress"><i style="width:${p}%"></i></div>
+      <div class="goalmeta"><span><b>${Math.round(p)}%</b> saved</span><span>${d.need==null?"":`Put aside <b>${mwk(d.need)}</b> a month`}</span><span class="pill ${d.cls}">${d.txt}</span></div></div>`;}).join("");
+}
+let lawFilter=-1;
+function renderLaws(){
+  const done=Object.values(state.laws).filter(Boolean).length;
+  $("#lw-count").textContent=`${done} of 27 laws practised`;$("#lw-bar").style.width=pct(done,27)+"%";
+  $("#lw-filter").innerHTML=[["All",-1]].concat(PARTS.map((p,i)=>[p,i])).map(f=>`<button type="button" class="chip" data-part="${f[1]}" aria-pressed="${lawFilter===f[1]}">${f[0]}</button>`).join("");
+  $("#lawList").innerHTML=LAWS.filter(l=>lawFilter<0||l[1]===lawFilter).map(l=>{const on=!!state.laws[l[0]];
+    return `<details class="law" data-n="${l[0]}"><summary><span class="no">${l[0]}</span><span class="ttl">${l[2]}</span>${on?'<span class="pill good">✓ Practised</span>':'<span class="pill none">Not yet</span>'}</summary>
+    <div class="body"><div><div class="lab">Meaning</div><p>${l[3]}</p></div><div><div class="lab">Try this</div><p>${l[4]}</p></div><div class="lesson">${l[5]}</div>
+    <label class="tick" for="lt-${l[0]}"><input id="lt-${l[0]}" type="checkbox" data-law="${l[0]}" ${on?"checked":""}> I practise this law</label></div></details>`;}).join("");
+}
+function renderPlan(){
+  $("#planList").innerHTML=PLAN.map((p,i)=>`<label class="step" for="pl-${i}"><input id="pl-${i}" type="checkbox" data-plan="${i}" ${state.plan[i]?"checked":""}><span><b>${i+1}. ${p[0]}</b><span>${p[1]}</span></span></label>`).join("");
+}
+function renderRisks(){
+  $("#riskList").innerHTML=RISKS.map((r,i)=>`<div class="riskrow" data-risk="${esc(r)}"><b>${r}</b>
+    <label class="inp"><select aria-label="${r} rating" id="rk-${i}" data-rf="lvl"><option value="">Not rated</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+    <label class="inp"><input aria-label="${r} contingency plan" id="rp-${i}" type="text" placeholder="Contingency plan" data-rf="plan" value="${esc(state.risks[r].plan)}"></label></div>`).join("");
+  RISKS.forEach((r,i)=>{$("#rk-"+i).value=state.risks[r].lvl;});
+}
+function incRow(i){return `<div class="rowline inc" data-id="${i.id}"><label class="inp name"><input aria-label="Income name" id="in-${i.id}" type="text" data-f="name" data-t="s" value="${esc(i.name)}"></label><label class="inp"><input aria-label="Income amount" id="ia-${i.id}" type="number" inputmode="decimal" min="0" step="10000" data-f="amount" data-t="n" value="${num(i.amount)}"><em>MWK</em></label><button class="x" data-del aria-label="Delete income line" type="button">×</button></div>`;}
+function expRow(e){return `<div class="rowline" data-id="${e.id}"><label class="inp name"><input aria-label="Expense name" id="en-${e.id}" type="text" data-f="name" data-t="s" value="${esc(e.name)}"></label><label class="inp"><select aria-label="Category" id="ec-${e.id}" data-f="cat" data-t="s">${CATS.map(c=>`<option value="${c[0]}"${e.cat===c[0]?" selected":""}>${c[1]}</option>`).join("")}</select></label><label class="inp"><input aria-label="Amount" id="ea-${e.id}" type="number" inputmode="decimal" min="0" step="5000" data-f="amount" data-t="n" value="${num(e.amount)}"><em>MWK</em></label><button class="x" data-del aria-label="Delete expense" type="button">×</button></div>`;}
+function costRow(c){return `<div class="rowline cost" data-id="${c.id}"><label class="inp name"><input aria-label="Cost name" id="cn-${c.id}" type="text" data-f="name" data-t="s" value="${esc(c.name)}"></label><label class="inp"><input aria-label="Cost amount" id="ca-${c.id}" type="number" inputmode="decimal" min="0" step="5000" data-f="amount" data-t="n" value="${num(c.amount)}"><em>MWK</em></label><button class="x" data-del aria-label="Delete cost" type="button">×</button></div>`;}
+function renderLists(){
+  $("#incList").innerHTML=state.incomes.map(incRow).join("")||'<p class="sub">No income lines yet.</p>';
+  $("#expList").innerHTML=state.expenses.map(expRow).join("")||'<p class="sub">No expenses yet. Add your first one.</p>';
+  $("#costList").innerHTML=state.biz.costs.map(costRow).join("");
+}
+function setBindValues(){
+  $$("[data-bind]").forEach(el=>{
+    const v=getPath(state,el.dataset.bind);
+    if(el.dataset.bind.startsWith("newGoal."))return;
+    el.value=v==null?"":v;
+  });
+}
+const draft={name:"",target:0,saved:0,date:""};
+function getPath(o,p){return p.split(".").reduce((a,k)=>a==null?a:a[k],o);}
+function setPath(o,p,v){const ks=p.split(".");const last=ks.pop();const t=ks.reduce((a,k)=>a[k],o);t[last]=v;}
+
+function renderMonths(){
+  const keys=Object.keys(state.months).filter(k=>{const m=state.months[k];return m.expenses.length||m.incomes.some(i=>num(i.amount)>0);}).sort();
+  const rows=keys.map(k=>({k,t:totals(state.months[k])}));
+  if(!rows.length){$("#mt-table").innerHTML='<p class="sub" style="padding:12px">No months with figures yet. Add income and expenses on the Budget tab.</p>';$("#mt-bars").innerHTML="";}
+  else{
+    const S=rows.reduce((a,r)=>({inc:a.inc+r.t.income,sp:a.sp+r.t.spend,sv:a.sv+r.t.by.save+r.t.by.inv,left:a.left+r.t.surplus}),{inc:0,sp:0,sv:0,left:0});
+    $("#mt-table").innerHTML=`<table class="sched"><thead><tr><th>Month</th><th>Income</th><th>Spending</th><th>Saved + invested</th><th>Left over</th><th>Rate</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${monthLabel(r.k)}${r.k===state.cur?" ●":""}</td><td>${fmt(r.t.income)}</td><td>${fmt(r.t.spend)}</td><td>${fmt(r.t.by.save+r.t.by.inv)}</td><td>${fmt(r.t.surplus)}</td><td>${r.t.rate.toFixed(1)}%</td><td><button class="chip" type="button" data-month="${r.k}">Open</button></td></tr>`).join("")}</tbody><tfoot><tr><td>Total</td><td>${fmt(S.inc)}</td><td>${fmt(S.sp)}</td><td>${fmt(S.sv)}</td><td>${fmt(S.left)}</td><td>${pct(S.sv,S.inc).toFixed(1)}%</td><td></td></tr></tfoot></table>`;
+    const mx=Math.max(...rows.map(r=>r.t.income),1);
+    $("#mt-bars").innerHTML=rows.map(r=>`<div class="mbar"><span>${monthShort(r.k)}</span><div class="meter"><i style="width:${pct(r.t.income,mx)}%;background:var(--c-left)"></i><i style="width:${pct(r.t.by.save+r.t.by.inv,mx)}%;background:var(--c-save)"></i><span class="val">${compact(r.t.by.save+r.t.by.inv)}</span></div></div>`).join("");
+  }
+  const t=totals(state),sv=t.by.save,iv=t.by.inv,r=Math.pow(1+num(state.invest.rate)/100,1/12)-1;let ib=0,pr="";
+  for(let i=1;i<=12;i++){ib=ib*(1+r)+iv;pr+=`<tr><td>${monthLabel(shiftMonth(state.cur,i))}</td><td>${fmt(sv+iv)}</td><td>${fmt((sv+iv)*i)}</td><td>${fmt(sv*i+ib)}</td></tr>`;}
+  $("#mt-psub").textContent=`Starting after ${monthLabel(state.cur)}, with ${mwk(sv+iv)} set aside each month. The last column grows the invested part at ${num(state.invest.rate)}% a year.`;
+  $("#mt-proj").innerHTML=`<table class="sched"><thead><tr><th>Month</th><th>Set aside</th><th>Total so far</th><th>With returns</th></tr></thead><tbody>${pr}</tbody></table>`;
+}
+async function exportXlsx(){
+  const setX=m=>{$("#xlMsg").textContent=m;$("#dataMsg").textContent=m;};
+  if(!window.XLSX){setX("The Excel library did not load. Check your connection and try again.");return;}
+  const X=window.XLSX,wb=X.utils.book_new();
+  const add=(name,rows,w)=>{const ws=X.utils.aoa_to_sheet(rows);ws["!cols"]=(w||[]).map(x=>({wch:x}));X.utils.book_append_sheet(wb,ws,name);};
+  const catName=Object.fromEntries(CATS.map(c=>[c[0],c[1]]));
+  const stTxt={good:"Good",warn:"Watch",bad:"Act",none:"Not set"};
+  const t=totals(state),today=new Date().toISOString().slice(0,10);
+  const sum=[["Money Laws Planner - Financial Report"],["Prepared by Mac Donald Chiromo | Source: Jim Rohn"],["Generated",today],["Month",monthLabel(state.cur)],["Currency","MWK"],[],["Item","Amount (MWK)"],["Total income",t.income]];
+  CATS.forEach(c=>sum.push([c[1],t.by[c[0]]]));
+  sum.push(["Left over",t.surplus],["Saved and invested as % of income",+t.rate.toFixed(1)],["Target saving share %",num(state.savePct)],[],["Law check","Status","Detail"]);
+  checks().forEach(c=>sum.push(["Law "+c[0]+": "+c[1],stTxt[c[2]],c[3]]));
+  add("Summary",sum,[38,16,70]);
+  const keys=Object.keys(state.months).filter(k=>{const m=state.months[k];return m.expenses.length||m.incomes.some(i=>num(i.amount)>0);}).sort();
+  const mrows=[["Month","Income","Essentials","Lifestyle","Debt repayment","Savings","Investment","Spending","Saved + invested","Left over","Saving rate %"]];
+  const tot=[0,0,0,0,0,0,0,0,0,0];
+  keys.forEach(k=>{const q=totals(state.months[k]);const r=[q.income,q.by.ess,q.by.life,q.by.debt,q.by.save,q.by.inv,q.spend,q.by.save+q.by.inv,q.surplus];r.forEach((v,i)=>tot[i]+=v);mrows.push([monthLabel(k),...r,+q.rate.toFixed(1)]);});
+  if(keys.length)mrows.push(["Total",...tot.slice(0,9),+pct(tot[7],tot[0]).toFixed(1)]);
+  add("Months",mrows,[18,14,14,14,16,12,12,14,18,14,14]);
+  const erows=[["Month","Type","Name","Category","Amount (MWK)"]];
+  keys.forEach(k=>{const m=state.months[k];m.incomes.forEach(i=>erows.push([monthLabel(k),"Income",i.name,"",num(i.amount)]));m.expenses.forEach(e=>erows.push([monthLabel(k),"Expense",e.name,catName[e.cat]||e.cat,num(e.amount)]));});
+  add("Entries",erows,[18,10,34,18,16]);
+  const iv=state.invest,yrs=Math.min(60,Math.max(1,Math.round(num(iv.years))));
+  const grows=[["Growth schedule"],["Starting amount",num(iv.initial),"Monthly",num(iv.monthly),"Annual return %",num(iv.rate),"Years",yrs],[],["Month","Year","Added","Returns this month","Balance","Total put in"]];
+  sched(num(iv.initial),num(iv.monthly),num(iv.rate),yrs*12).forEach(r=>grows.push([r.m,Math.ceil(r.m/12),num(iv.monthly),Math.round(r.g),Math.round(r.bal),Math.round(r.contrib)]));
+  add("Growth",grows,[10,8,14,20,16,16,10,8]);
+  const grow=[["Goal","Target","Saved","Remaining","Target date","Needed per month"]];
+  state.goals.forEach(g=>{const d=dueText(g);grow.push([g.name,num(g.target),num(g.saved),Math.max(num(g.target)-num(g.saved),0),g.date||"",d.need==null?"":Math.round(d.need)]);});
+  add("Goals",grow,[34,16,16,16,14,18]);
+  const b=state.biz,c=bizCalc(b);
+  const brows=[["Enterprise",b.name],["Capital invested",num(b.capital)],["Units started",num(b.birds)],["Mortality %",num(b.mortality)],["Unsold %",num(b.unsold)],["Price per unit",num(b.price)],["Cycles per year",num(b.cycles)],[],["Cost line","Amount (MWK)"]];
+  b.costs.forEach(x=>brows.push([x.name,num(x.amount)]));
+  brows.push([],["Units sold",Math.round(c.sellable)],["Revenue",Math.round(c.revenue)],["Total costs",Math.round(c.costs)],["Net profit per cycle",Math.round(c.net)],["Return on capital %",c.roi==null?"":+c.roi.toFixed(1)],["Break-even price per unit",c.bePrice==null?"":Math.round(c.bePrice)],["Net profit per year",Math.round(c.annual)],[],["Risk","Rating","Contingency plan"]);
+  RISKS.forEach(r=>brows.push([r,state.risks[r].lvl||"Not rated",state.risks[r].plan]));
+  add("Business",brows,[30,22,50]);
+  const lrows=[["No.","Part","Law","Practised"]];
+  LAWS.forEach(l=>lrows.push([l[0],PARTS[l[1]],l[2],state.laws[l[0]]?"Yes":"No"]));
+  lrows.push([],["Starting plan","","","Done"]);
+  PLAN.forEach((p,i)=>lrows.push([i+1,"",p[0],state.plan[i]?"Yes":"No"]));
+  add("Laws and plan",lrows,[8,44,44,12]);
+  add("Notes",[["This report is general financial education, not investment, tax or legal advice."],["The 27 laws are an educational interpretation of common personal-finance themes, not a verified list."],["Projections are illustrative. Returns are not guaranteed and fees and taxes are not included."],["Prepared by Mac Donald Chiromo | Source: Jim Rohn"]],[100]);
+  try{
+    const buf=X.write(wb,{bookType:"xlsx",type:"array"});
+    const dl=await window.claude.use("downloads");
+    if(!dl){setX("Downloads are not available in this view.");return;}
+    await dl.save({filename:"Money_Laws_Report_"+state.cur+".xlsx",data:new Blob([buf])});
+    setX("Report saved.");
+  }catch(e){setX(e&&e.code==="declined"?"Download cancelled.":"The download could not be completed.");}
+}
+function switchMonth(k){if(!state.months[k])state.months[k]={incomes:[],expenses:[]};state.cur=k;state.incomes=state.months[k].incomes;state.expenses=state.months[k].expenses;renderLists();updateAll();queueSave();}
+function copyPrev(){
+  const p=state.months[shiftMonth(state.cur,-1)],note=$("#mNote");
+  if(!p||!(p.expenses.length||p.incomes.length)){note.textContent="There is no budget for the previous month to copy.";return;}
+  if(state.expenses.length||state.incomes.some(i=>num(i.amount)>0)){note.textContent="This month already has figures. Delete them first if you want to copy last month's budget.";return;}
+  const re=a=>a.map(x=>({...x,id:uid()}));
+  state.months[state.cur]={incomes:re(p.incomes),expenses:re(p.expenses)};state.incomes=state.months[state.cur].incomes;state.expenses=state.months[state.cur].expenses;renderLists();changed();note.textContent="Last month's budget was copied. Adjust the amounts for this month.";
+}
+function updateAll(){renderOverview();renderBudget();renderMonths();renderGrow();renderBiz();renderGoals();renderLaws();$("#sampleBanner").hidden=!state.sample;}
+function fullRender(){renderLists();renderRisks();renderPlan();setBindValues();updateAll();}
+
+/* ---------- saving ---------- */
+let saveTimer=null,dirty=false,ref=null,remoteOk=false;
+function setSave(t){$("#saveState").textContent=t;}
+function queueSave(){dirty=true;clearTimeout(saveTimer);setSave("Saving…");saveTimer=setTimeout(doSave,700);}
+async function doSave(){
+  let local=false,remote=false;
+  try{localStorage.setItem(LS,JSON.stringify(state));local=true;}catch(e){}
+  if(ref){try{await ref.set(clone(state));remote=true;}catch(e){}}
+  setSave(remote?"Saved to your account":local?"Saved on this device":"Not saved");
+  $("#dataSub").textContent=remote?"Your numbers are saved privately to your account and reload next time. Nobody else can read them.":local?"Your numbers are saved in this browser only. Use Copy backup to keep a copy elsewhere.":"Saving is unavailable in this view. Use Copy backup to keep your numbers.";
+}
+function changed(){updateAll();queueSave();}
+
+/* ---------- events ---------- */
+function bindStatic(){
+  document.addEventListener("input",e=>{
+    const t=e.target;
+    if(t.dataset&&t.dataset.bind){
+      const val=t.dataset.t==="n"?num(t.value):t.value;
+      if(t.dataset.bind.startsWith("newGoal.")){draft[t.dataset.bind.split(".")[1]]=val;return;}
+      setPath(state,t.dataset.bind,val);changed();return;
+    }
+    const row=t.closest&&t.closest("[data-id]");
+    if(row&&t.dataset.f){
+      const arr=listFor(row);const item=arr&&arr.find(x=>x.id===row.dataset.id);
+      if(item){item[t.dataset.f]=t.dataset.t==="n"?num(t.value):t.value;changed();}
+      return;
+    }
+    const rr=t.closest&&t.closest("[data-risk]");
+    if(rr&&t.dataset.rf){state.risks[rr.dataset.risk][t.dataset.rf]=t.value;changed();return;}
+    if(t.dataset&&t.dataset.law){state.laws[t.dataset.law]=t.checked;changed();return;}
+    if(t.dataset&&t.dataset.plan!==undefined){state.plan[t.dataset.plan]=t.checked;queueSave();return;}
+  });
+  document.addEventListener("click",e=>{
+    const t=e.target;
+    const del=t.closest&&t.closest("[data-del]");
+    if(del){const row=del.closest("[data-id]");const arr=listFor(row);const i=arr.findIndex(x=>x.id===row.dataset.id);if(i>=0){arr.splice(i,1);renderLists();changed();}return;}
+    const part=t.closest&&t.closest("[data-part]");
+    if(part){lawFilter=+part.dataset.part;renderLaws();return;}
+    if(t.closest&&t.closest("[data-xlsx]")){exportXlsx();return;}
+    const mo=t.closest&&t.closest("[data-month]");
+    if(mo){switchMonth(mo.dataset.month);location.hash="#budget";return;}
+  });
+  $("#addInc").addEventListener("click",()=>{state.incomes.push({id:uid(),name:"",amount:0});renderLists();changed();const l=$$("#incList .rowline");const f=l[l.length-1]&&l[l.length-1].querySelector("input");if(f)f.focus();});
+  $("#addExp").addEventListener("click",()=>{state.expenses.push({id:uid(),name:"",cat:"ess",amount:0});renderLists();changed();const l=$$("#expList .rowline");const f=l[l.length-1]&&l[l.length-1].querySelector("input");if(f)f.focus();});
+  $("#addCost").addEventListener("click",()=>{state.biz.costs.push({id:uid(),name:"",amount:0});renderLists();changed();const l=$$("#costList .rowline");const f=l[l.length-1]&&l[l.length-1].querySelector("input");if(f)f.focus();});
+  $("#addGoal").addEventListener("click",()=>{
+    if(!draft.name.trim()||!(draft.target>0)){setMsgGoal();return;}
+    state.goals.push({id:uid(),name:draft.name.trim(),target:draft.target,saved:draft.saved,date:draft.date});
+    draft.name="";draft.target=0;draft.saved=0;draft.date="";["gName","gTarget","gSaved","gDate"].forEach(i=>{$("#"+i).value="";});changed();
+  });
+  $("#clearSample").addEventListener("click",()=>{const keep={laws:state.laws,plan:state.plan};state=blank();state.laws=keep.laws;state.plan=keep.plan;fullRender();queueSave();});
+  $("#copyBackup").addEventListener("click",async()=>{
+    const txt=JSON.stringify(state);let ok=false;
+    try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){}
+    if(!ok){$("#restoreBox").hidden=false;const ta=$("#restoreText");ta.value=txt;ta.focus();ta.select();}
+    $("#dataMsg").textContent=ok?"Backup copied. Paste it into a note or message to keep it.":"Copying was blocked. The backup is selected below so you can copy it yourself.";
+  });
+  $("#showRestore").addEventListener("click",()=>{$("#restoreBox").hidden=!$("#restoreBox").hidden;});
+  $("#doRestore").addEventListener("click",()=>{
+    try{const o=JSON.parse($("#restoreText").value);if(!o||o.v!==1)throw new Error("bad");state=normalize(o);fullRender();queueSave();$("#dataMsg").textContent="Backup restored.";$("#restoreBox").hidden=true;}
+    catch(e){$("#dataMsg").textContent="That text is not a valid backup. Paste the full text from Copy backup.";}
+  });
+  let armed=false;
+  $("#resetAll").addEventListener("click",e=>{
+    if(!armed){armed=true;e.target.textContent="Tap again to erase everything";setTimeout(()=>{armed=false;e.target.textContent="Reset everything";},4000);return;}
+    armed=false;e.target.textContent="Reset everything";state=blank();fullRender();queueSave();$("#dataMsg").textContent="Everything was cleared.";
+  });
+  $("#mPrev").addEventListener("click",()=>switchMonth(shiftMonth(state.cur,-1)));
+  $("#mNext").addEventListener("click",()=>switchMonth(shiftMonth(state.cur,1)));
+  $("#mPick").addEventListener("change",e=>{if(/^\d{4}-\d{2}$/.test(e.target.value))switchMonth(e.target.value);});
+  $("#mCopy").addEventListener("click",copyPrev);
+  window.addEventListener("hashchange",route);
+}
+function setMsgGoal(){const b=$("#addGoal");const o=b.textContent;b.textContent="Add a name and a target first";setTimeout(()=>{b.textContent=o;},2500);}
+function listFor(row){
+  const p=row.parentElement.id;
+  return p==="incList"?state.incomes:p==="expList"?state.expenses:p==="costList"?state.biz.costs:p==="goalList"?state.goals:null;
+}
+const VIEWS=["overview","budget","months","grow","business","goals","laws","plan"];
+function route(){
+  const h=location.hash.slice(1),v=VIEWS.includes(h)?h:"overview";
+  VIEWS.forEach(n=>{$("#view-"+n).hidden=n!==v;const a=$('[data-tab="'+n+'"]');if(n===v){a.setAttribute("aria-current","page");a.scrollIntoView({inline:"center",block:"nearest"});}else a.removeAttribute("aria-current");});
+}
+
+/* ---------- boot ---------- */
+buildViews();
+try{const s=localStorage.getItem(LS);if(s){const o=JSON.parse(s);if(o&&o.v===1)state=normalize(o);}}catch(e){}
+bindStatic();fullRender();route();setSave("Saved on this device");
+$("#dataSub").textContent="Your numbers are saved in this browser. Use Copy backup to keep a copy elsewhere.";
+(async()=>{
+  try{
+    if(!(window.claude&&window.claude.use))return;
+    const db=await window.claude.use("db"),user=await window.claude.use("user");
+    if(!db||!user)return;
+    const id=await user.id();if(!id)return;
+    ref=db.doc("data/users/"+id+"/planner");
+    const snap=await ref.get();
+    if(snap.exists&&!dirty){const d=snap.data();if(d&&d.v===1){state=normalize(d);try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}fullRender();}}
+    else{await ref.set(clone(state));}
+    remoteOk=true;setSave("Saved to your account");
+    $("#dataSub").textContent="Your numbers are saved privately to your account and reload next time. Nobody else can read them.";
+  }catch(e){ref=null;}
+})();
+</script>
+
+</body></html>
